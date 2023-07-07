@@ -14,3 +14,6 @@ https://github.com/mgeeky/Penetration-Testing-Tools/blob/master/phishing/phishin
 
 using linter creating a website
 ![](20230706073352.png)
+
+sample taken from https://codepen.io/frytyler/pen/nJYVEO
+
