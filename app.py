@@ -43,7 +43,7 @@ executable_extensions = [
 options = {
     'debug': False,
     'verbose': False,
-    'nocolor' : False,
+    'nocolor' : True,
     'log' : sys.stderr,
     'format' : 'text',
 }
@@ -77,9 +77,11 @@ class Logger:
 
     @staticmethod
     def with_color(c, s):
+        return none
         return "\x1b[%dm%s\x1b[0m" % (c, s)
 
     def colored(self, txt, col):
+        self.options['nocolor'] = 1
         if self.options['nocolor']:
             return txt
 
@@ -89,6 +91,8 @@ class Logger:
     #   def out(txt, mode='info ', fd=None, color=None, noprefix=False, newline=True):
     @staticmethod
     def out(txt, fd, mode='info ', **kwargs):
+        color = 'none'
+        self.options['nocolor'] = 1
         if txt == None or fd == 'none':
             return 
         elif fd == None:
@@ -101,6 +105,7 @@ class Logger:
             'nocolor' : False
         }
         args.update(kwargs)
+        args['nocolor'] = 1
 
         if type(txt) != str:
             txt = str(txt)
@@ -151,6 +156,7 @@ class Logger:
 
     # Info shall be used as an ordinary logging facility, for every desired output.
     def info(self, txt, forced = False, **kwargs):
+        self.options['nocolor'] = 1
         kwargs['nocolor'] = self.options['nocolor']
         if forced or (self.options['verbose'] or \
             self.options['debug'] ) \
@@ -158,20 +164,24 @@ class Logger:
             Logger.out(txt, self.options['log'], 'info', **kwargs)
 
     def text(self, txt, **kwargs):
+        self.options['nocolor'] = 1
         kwargs['noPrefix'] = True
         kwargs['nocolor'] = self.options['nocolor']
         Logger.out(txt, self.options['log'], '', **kwargs)
 
     def dbg(self, txt, **kwargs):
+        self.options['nocolor'] = 1
         if self.options['debug']:
             kwargs['nocolor'] = self.options['nocolor']
             Logger.out(txt, self.options['log'], 'debug', **kwargs)
 
     def err(self, txt, **kwargs):
+        self.options['nocolor'] = 1
         kwargs['nocolor'] = self.options['nocolor']
         Logger.out(txt, self.options['log'], 'error', **kwargs)
 
     def fatal(self, txt, **kwargs):
+        self.options['nocolor'] = 1
         kwargs['nocolor'] = self.options['nocolor']
         Logger.out(txt, self.options['log'], 'error', **kwargs)
         os._exit(1)
@@ -1146,7 +1156,7 @@ Therefore you will have better chances of delivering your phishing e-mail when y
         }
 
 def printOutput(out):
-    options['format'] = 'json'
+    options['format'] = 'text'
     if options['format'] == 'text':
         width = 100
         num = 0
@@ -1161,30 +1171,33 @@ def printOutput(out):
                 initial_indent = '',
                 subsequent_indent = '    '
             )).strip()
+       
 
             analysis = analysis.replace('- ', '\t- ')
 
             return_text = f'''
-------------------------------------------
-({num}) Test: {logger.colored(k, "cyan")}
+            ------------------------------------------
+            ({num}) Test: {logger.colored(k, "cyan")}
 
-{logger.colored("DESCRIPTION", "blue")}: 
+            {logger.colored("DESCRIPTION", "blue")}: 
 
-    {desc}
+                {desc}
 
-{logger.colored("CONTEXT", "blue")}: 
+            {logger.colored("CONTEXT", "blue")}: 
 
-    {context}
+                {context}
 
-{logger.colored("ANALYSIS", "blue")}: 
+            {logger.colored("ANALYSIS", "blue")}: 
 
-    {analysis}
-'''
+                {analysis}
+            '''
+
+            
             
     elif options['format'] == 'json':
         return_text = json.dumps(out, indent=4)
     
-    return json.stringify(return_text,undefined,4)
+    return return_text
 
 def opts(argv):
     global options
@@ -1219,14 +1232,31 @@ def display():
 
         p = PhishingMailParser({})
         ret = p.parse(html_data)
+        descriptions = []
+        contexts = []
+        analysises = []
 
         if len(ret) > 0:
-            return_text = printOutput(ret)
+            # print(ret)
+
+            for key in ret:
+                print("key: ", key)
+                print("value: ", ret[key])
+
+                for k in ret[key]:
+                    print("new key: ", k)
+                    if(k == "description"):
+                        descriptions.append(ret[key][k])
+                    elif (k == "context"):
+                        contexts.append(ret[key][k])
+                    elif (k == "analysis"):
+                        analysises.append(ret[key][k].split('- Found'))
+                    # print("new value: ", ret[key][k])
+            # return_text = ret
         else:
             return_text = '\n[+] Congrats! Your message does not have any known bad smells that could trigger anti-spam rules.\n'
  
-        return render_template("result.html", result=return_text)
- 
+        return render_template("result.html", descriptions=descriptions, contexts=contexts, analysises=analysises)
  
 # main route to start with
 if __name__ == '__main__':
@@ -1236,4 +1266,4 @@ if __name__ == '__main__':
     Powered by Mariusz Banach / mgeeky and fanbyprinciple
 ''')
 
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port="5000",debug=True)

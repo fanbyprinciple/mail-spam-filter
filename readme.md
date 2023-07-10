@@ -17,3 +17,7 @@ using linter creating a website
 
 sample taken from https://codepen.io/frytyler/pen/nJYVEO
 
+# page created!
+
+![](20230710072831.png)
+![](20230710072811.png)
